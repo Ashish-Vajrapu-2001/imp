@@ -1,0 +1,12 @@
+{
+    "name": "LS_AzureDataLakeStorage",
+    "properties": {
+        "type": "AzureBlobFS",
+        "parameters": {
+            "storageAccountName": { "type": "string", "defaultValue": "adfdatabricks456" }
+        },
+        "typeProperties": {
+            "url": "https://@{linkedService().storageAccountName}.dfs.core.windows.net"
+        }
+    }
+}

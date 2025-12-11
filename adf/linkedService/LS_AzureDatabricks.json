@@ -1,0 +1,19 @@
+{
+    "name": "LS_AzureDatabricks",
+    "properties": {
+        "type": "AzureDatabricks",
+        "parameters": {
+            "domain": { "type": "string", "defaultValue": "https://adb-123456789.0.azuredatabricks.net" },
+            "accessToken": { "type": "secureString" },
+            "clusterId": { "type": "string" }
+        },
+        "typeProperties": {
+            "domain": "@{linkedService().domain}",
+            "accessToken": {
+                "type": "SecureString",
+                "value": "@{linkedService().accessToken}"
+            },
+            "existingClusterId": "@{linkedService().clusterId}"
+        }
+    }
+}

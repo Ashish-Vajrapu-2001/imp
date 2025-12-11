@@ -1,0 +1,27 @@
+{
+    "name": "DS_AzureSQL_Source",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_AzureSQL_Control",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "sqlServer": { "value": "@dataset().serverName", "type": "Expression" },
+                "database": { "value": "@dataset().databaseName", "type": "Expression" },
+                "username": "{{PLACEHOLDER_SQL_USERNAME}}",
+                "password": "{{PLACEHOLDER_SQL_PASSWORD}}"
+            }
+        },
+        "parameters": {
+            "serverName": { "type": "string" },
+            "databaseName": { "type": "string" },
+            "schemaName": { "type": "string" },
+            "tableName": { "type": "string" }
+        },
+        "type": "AzureSqlTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": "@dataset().schemaName",
+            "table": "@dataset().tableName"
+        }
+    }
+}

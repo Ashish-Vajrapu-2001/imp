@@ -1,0 +1,65 @@
+{
+    "name": "PL_Master_Orchestrator",
+    "properties": {
+        "parameters": {
+            "pipeline_run_id": { "type": "string", "defaultValue": "@pipeline().RunId" }
+        },
+        "activities": [
+            {
+                "name": "Get Active Tables",
+                "type": "Lookup",
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "control.sp_GetTableLoadOrder"
+                    },
+                    "dataset": { "referenceName": "DS_ControlDB", "type": "DatasetReference" },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEach Table",
+                "type": "ForEach",
+                "dependsOn": [ { "activity": "Get Active Tables", "dependencyConditions": [ "Succeeded" ] } ],
+                "typeProperties": {
+                    "items": "@activity('Get Active Tables').output.value",
+                    "activities": [
+                        {
+                            "name": "Check Load Type",
+                            "type": "IfCondition",
+                            "typeProperties": {
+                                "expression": "@equals(item().initial_load_completed, 0)",
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Exec Initial Load",
+                                        "type": "ExecutePipeline",
+                                        "typeProperties": {
+                                            "pipeline": { "referenceName": "PL_Initial_Load_Single_Table", "type": "PipelineReference" },
+                                            "parameters": {
+                                                "pipeline_run_id": "@pipeline().parameters.pipeline_run_id",
+                                                "table_metadata": "@item()"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ifFalseActivities": [
+                                    {
+                                        "name": "Exec Incremental Load",
+                                        "type": "ExecutePipeline",
+                                        "typeProperties": {
+                                            "pipeline": { "referenceName": "PL_Incremental_CDC_Single_Table", "type": "PipelineReference" },
+                                            "parameters": {
+                                                "pipeline_run_id": "@pipeline().parameters.pipeline_run_id",
+                                                "table_metadata": "@item()"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

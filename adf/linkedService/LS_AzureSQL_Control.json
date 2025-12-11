@@ -1,0 +1,15 @@
+{
+    "name": "LS_AzureSQL_Control",
+    "properties": {
+        "type": "AzureSqlDatabase",
+        "parameters": {
+            "sqlServer": { "type": "string", "defaultValue": "adf-databricks.database.windows.net" },
+            "database": { "type": "string", "defaultValue": "ADF-Databricks" },
+            "username": { "type": "string" },
+            "password": { "type": "secureString" }
+        },
+        "typeProperties": {
+            "connectionString": "Server=tcp:@{linkedService().sqlServer},1433;Database=@{linkedService().database};User ID=@{linkedService().username};Password=@{linkedService().password};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        }
+    }
+}
