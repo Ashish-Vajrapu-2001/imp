@@ -1,64 +1,113 @@
 {
-    "name": "PL_Incremental_CDC_Single_Table",
-    "properties": {
-        "parameters": {
-            "pipeline_run_id": { "type": "string" },
-            "table_metadata": { "type": "object" }
-        },
-        "activities": [
-            {
-                "name": "Copy CDC Data",
-                "type": "Copy",
-                "typeProperties": {
-                    "source": {
-                        "type": "AzureSqlSource",
-                        "sqlReaderQuery": {
-                            "value": "SELECT * FROM CHANGETABLE(CHANGES @{pipeline().parameters.table_metadata.schema_name}.@{pipeline().parameters.table_metadata.table_name}, @{pipeline().parameters.table_metadata.last_sync_version}) as CT",
-                            "type": "Expression"
-                        }
-                    },
-                    "sink": { "type": "ParquetSink" }
-                },
-                "inputs": [
-                    {
-                        "referenceName": "DS_AzureSQL_Source",
-                        "type": "DatasetReference",
-                        "parameters": {
-                            "serverName": "adf-databricks.database.windows.net",
-                            "databaseName": "ADF-Databricks",
-                            "schemaName": "@pipeline().parameters.table_metadata.schema_name",
-                            "tableName": "@pipeline().parameters.table_metadata.table_name"
-                        }
-                    }
-                ],
-                "outputs": [
-                    {
-                        "referenceName": "DS_Parquet_Bronze",
-                        "type": "DatasetReference",
-                        "parameters": {
-                            "source_system": "AzureSQL",
-                            "schema_name": "@pipeline().parameters.table_metadata.schema_name",
-                            "table_name": "@pipeline().parameters.table_metadata.table_name",
-                            "load_type": "incremental",
-                            "pipeline_run_id": "@pipeline().parameters.pipeline_run_id"
-                        }
-                    }
-                ]
-            },
-            {
-                "name": "NB Incremental Load",
-                "type": "DatabricksNotebook",
-                "dependsOn": [ { "activity": "Copy CDC Data", "dependencyConditions": [ "Succeeded" ] } ],
-                "linkedServiceName": { "referenceName": "LS_AzureDatabricks", "type": "LinkedServiceReference" },
-                "typeProperties": {
-                    "notebookPath": "/bronze/Incremental_CDC_Dynamic",
-                    "baseParameters": {
-                        "pipeline_run_id": "@pipeline().parameters.pipeline_run_id",
-                        "table_id": "@string(pipeline().parameters.table_metadata.table_id)",
-                        "table_name": "@pipeline().parameters.table_metadata.table_name"
-                    }
-                }
-            }
-        ]
-    }
+	"name": "PL_Incremental_CDC_Single_Table",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy CDC Data",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT * FROM CHANGETABLE(CHANGES @{pipeline().parameters.table_metadata.schema_name}.@{pipeline().parameters.table_metadata.table_name}, @{pipeline().parameters.table_metadata.last_sync_version}) as CT",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_AzureSQL_Source",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": "adf-databricks.database.windows.net",
+							"databaseName": "ADF-Databricks",
+							"schemaName": "@pipeline().parameters.table_metadata.schema_name",
+							"tableName": "@pipeline().parameters.table_metadata.table_name"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_Parquet_Bronze",
+						"type": "DatasetReference",
+						"parameters": {
+							"source_system": "AzureSQL",
+							"schema_name": "@pipeline().parameters.table_metadata.schema_name",
+							"table_name": "@pipeline().parameters.table_metadata.table_name",
+							"load_type": "incremental",
+							"pipeline_run_id": "@pipeline().parameters.pipeline_run_id"
+						}
+					}
+				]
+			},
+			{
+				"name": "NB Incremental Load",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Copy CDC Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/bronze/Incremental_CDC_Dynamic",
+					"baseParameters": {
+						"pipeline_run_id": {
+							"value": "@pipeline().parameters.pipeline_run_id",
+							"type": "Expression"
+						},
+						"table_id": {
+							"value": "@string(pipeline().parameters.table_metadata.table_id)",
+							"type": "Expression"
+						},
+						"table_name": {
+							"value": "@pipeline().parameters.table_metadata.table_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AzureDatabricks",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"pipeline_run_id": {
+				"type": "string"
+			},
+			"table_metadata": {
+				"type": "object"
+			}
+		},
+		"annotations": []
+	}
 }
